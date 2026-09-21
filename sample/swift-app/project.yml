@@ -1,0 +1,34 @@
+# XcodeGen spec. Generate with:  xcodegen generate   (brew install xcodegen)
+name: HingeSwiftDemo
+options:
+  bundleIdPrefix: dev.bmcreations.hinge
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+targets:
+  HingeSwiftDemo:
+    type: application
+    platform: iOS
+    sources:
+      - path: HingeDemo
+      # HingeKit is source, not a package: Swift export supports direct Xcode integration
+      # only, so the adapter compiles into the app target alongside the demo.
+      - path: ../../swift/HingeKit/Sources/HingeKit
+        name: HingeKit
+    settings:
+      base:
+        # INFOPLIST_FILE, not XcodeGen's `info:` key: that key GENERATES a plist on every
+        # run and would discard UILaunchScreen, which iOS needs or it runs the app
+        # letterboxed at compatibility size -- fatal for a foldable layout demo.
+        INFOPLIST_FILE: Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: dev.bmcreations.hinge.sample.swift
+        SWIFT_VERSION: "6.0"
+    preBuildScripts:
+      # Generates the native Swift `Hinge` module from hinge-core. Must run before
+      # Compile Sources, hence preBuildScripts rather than postCompileScripts.
+      - name: Swift export hinge-core
+        basedOnDependencyAnalysis: false
+        script: |
+          cd "$SRCROOT/../.."
+          ./gradlew :hinge-core:embedSwiftExportForXcode

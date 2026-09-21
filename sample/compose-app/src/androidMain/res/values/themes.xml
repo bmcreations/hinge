@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      A plain no-action-bar theme. `windowLayoutInDisplayCutoutMode` is not set on purpose:
+      the demo shows how the SDK handles hinge geometry, and cutout handling is a separate
+      concern that would muddy the inspector's numbers.
+    -->
+    <style name="Theme.Hinge" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

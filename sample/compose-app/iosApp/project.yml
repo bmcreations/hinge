@@ -1,0 +1,42 @@
+# XcodeGen spec. Generate with:  xcodegen generate   (brew install xcodegen)
+#
+# A generated project rather than a checked-in .xcodeproj: the pbxproj format is long,
+# order-sensitive and merges badly, and this spec says the same thing in 30 readable lines.
+name: HingeComposeDemo
+options:
+  bundleIdPrefix: dev.bmcreations.hinge
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+targets:
+  HingeComposeDemo:
+    type: application
+    platform: iOS
+    sources:
+      - path: .
+        excludes:
+          - "project.yml"
+          - "*.xcodeproj"
+    settings:
+      base:
+        # INFOPLIST_FILE, not XcodeGen's `info:` key: that key GENERATES a plist on every
+        # run and would discard UILaunchScreen, which iOS needs or it runs the app
+        # letterboxed at compatibility size -- fatal for a foldable layout demo.
+        INFOPLIST_FILE: Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: dev.bmcreations.hinge.sample.compose
+        SWIFT_VERSION: "6.0"
+        # The Kotlin framework is produced by the build phase below and lands here.
+        FRAMEWORK_SEARCH_PATHS:
+          - $(inherited)
+          - $(SRCROOT)/../build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+        OTHER_LDFLAGS:
+          - $(inherited)
+          - -framework
+          - ComposeApp
+    preBuildScripts:
+      - name: Build ComposeApp framework
+        basedOnDependencyAnalysis: false
+        script: |
+          cd "$SRCROOT/../../.."
+          ./gradlew :sample:compose-app:embedAndSignAppleFrameworkForXcode
