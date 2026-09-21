@@ -32,12 +32,7 @@ private val sharedFoldingState: Flow<FoldingState> =
             } else {
                 callbackFlow {
                     trySend(FoldingState())
-                    val listener = object : HingeSnapshotListener {
-                        override fun onSnapshot(snapshot: HingeSnapshot) {
-                            trySend(snapshot.toFoldingState())
-                        }
-                    }
-                    bridge.startObserving(listener)
+                    bridge.startObserving { snapshot -> trySend(snapshot.toFoldingState()) }
                     awaitClose { bridge.stopObserving() }
                 }
             }
@@ -46,18 +41,11 @@ private val sharedFoldingState: Flow<FoldingState> =
         .shareIn(hingeScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
 /**
- * Observes fold posture through the bridge registered by `HingeKit.install()`.
+ * Observes fold posture through the bridge registered with [HingeBridgeRegistry].
  *
  * Safe to collect at any time, including before the bridge is installed: it emits
  * [FoldPosture.Unknown] immediately and switches to real readings the moment Swift registers.
  * All collectors share one hardware subscription.
- *
- * Under Swift export this arrives in Swift as an `AsyncSequence`, so SwiftUI consumes posture
- * directly with `for await` and needs no callback plumbing:
- *
- * ```swift
- * for await state in foldingStateFlow() { self.state = state }
- * ```
  */
 public fun foldingStateFlow(): Flow<FoldingState> = sharedFoldingState
 

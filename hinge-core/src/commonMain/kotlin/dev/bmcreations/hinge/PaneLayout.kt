@@ -12,15 +12,6 @@ public sealed interface PaneLayout {
     /** Every layout occupies a rectangle, whether it is split or not. */
     public val bounds: FoldRect
 
-    /**
-     * The split, or `null` for a single pane.
-     *
-     * A member rather than an extension because sealed hierarchies and extensions each export
-     * differently depending on the mode — Swift export maps sealed types to Swift enums and
-     * extensions to methods, the Objective-C exporter to protocols and free functions. This
-     * reads identically under both.
-     */
-    public fun splitOrNull(): Split? = this as? Split
 
     /** One continuous area. Render the primary content only. */
     public data class Single(

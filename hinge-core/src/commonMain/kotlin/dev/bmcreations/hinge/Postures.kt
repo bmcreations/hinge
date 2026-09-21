@@ -12,11 +12,11 @@ package dev.bmcreations.hinge
  * and the sample apps' posture simulator need them at normal compile time. They are pure data
  * and cost nothing at runtime if unused.
  *
- * One signature per posture: no default arguments and no overloads, both of which reach Swift
- * differently depending on the export mode. Pass [DEFAULT_HINGE_THICKNESS] for a typical hinge.
+ * Each posture has an explicit form taking every dimension, and a convenience overload using
+ * the typical values below.
  *
  * ```
- * ProvideFoldingState(Postures.book(1280f, 900f, Postures.DEFAULT_HINGE_THICKNESS)) { App() }
+ * ProvideFoldingState(Postures.book(1280f, 900f)) { App() }
  * ```
  */
 public object Postures {
@@ -66,6 +66,10 @@ public object Postures {
         )
     }
 
+    /** [book] with [DEFAULT_HINGE_THICKNESS]. */
+    public fun book(width: Float, height: Float): FoldingState =
+        book(width, height, DEFAULT_HINGE_THICKNESS)
+
     /** Half-opened around a horizontal hinge: panes top and bottom, like a laptop. */
     public fun tabletop(width: Float, height: Float, hingeThickness: Float): FoldingState {
         val half = hingeThickness / 2f
@@ -84,6 +88,10 @@ public object Postures {
             ),
         )
     }
+
+    /** [tabletop] with [DEFAULT_HINGE_THICKNESS]. */
+    public fun tabletop(width: Float, height: Float): FoldingState =
+        tabletop(width, height, DEFAULT_HINGE_THICKNESS)
 
     /**
      * A gapless foldable: the display is continuous, but a zero-thickness fold line still
@@ -128,6 +136,13 @@ public object Postures {
                 ),
             ),
         )
+
+    /** [occlusionOnly] with [DEFAULT_OCCLUSION_THICKNESS] intruding from the leading edge. */
+    public fun occlusionOnly(width: Float, height: Float): FoldingState =
+        occlusionOnly(width, height, DEFAULT_OCCLUSION_THICKNESS)
+
+    /** [coverDisplay] at [COVER_WIDTH] x [COVER_HEIGHT]. */
+    public fun coverDisplay(): FoldingState = coverDisplay(COVER_WIDTH, COVER_HEIGHT)
 
     /**
      * A fold that is reported but not currently in effect.

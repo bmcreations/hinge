@@ -1,5 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -16,42 +15,18 @@ kotlin {
         publishLibraryVariants("release")
     }
 
-    // Produces build/XCFrameworks/<config>/Hinge.xcframework for the Swift package.
-    // Rebuild with: ./gradlew :hinge-core:assembleHingeXCFramework
-    val xcf = XCFramework("Hinge")
-    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
-        target.binaries.framework {
-            baseName = "Hinge"
-            // Static keeps the consuming app free of an extra dynamic framework to embed
-            // and sign, which matters for a library this small.
-            isStatic = true
-            // Required for Flow to appear in the generated headers on the fallback path.
-            export(libs.kotlinx.coroutines.core)
-            xcf.add(this)
-        }
-    }
-
-    /**
-     * Swift export is the primary iOS integration path: it produces a real Swift module, so
-     * `Flow` arrives as `AsyncSequence` and nullable primitives are not boxed.
-     *
-     * It is Alpha, and it only works with direct Xcode integration -- not CocoaPods, and not
-     * through an SPM binaryTarget. The Xcode run-script phase becomes:
-     *     ./gradlew :hinge-core:embedSwiftExportForXcode
-     *
-     * The XCFramework above remains the fallback for consumers who want the Objective-C
-     * exporter and SPM packaging instead. Disable Swift export in gradle.properties to use it.
-     */
-    swiftExport {
-        moduleName = "Hinge"
-        flattenPackage = "dev.bmcreations.hinge"
-    }
+    // Targets only, no framework binaries. iOS consumers reach this module through the
+    // Compose Multiplatform app's own umbrella framework, which exports it. A second
+    // framework here would embed the Kotlin runtime twice and invite duplicate symbols.
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
 
     sourceSets {
         commonMain.dependencies {
             // `api`, not `implementation`: FoldingStateSource.state is a StateFlow and
             // foldingStateFlow() returns a Flow, both public. As `implementation` those
-            // types are invisible to consumers, and the iOS export cannot see Flow at all.
+            // types would be invisible to consumers.
             api(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {

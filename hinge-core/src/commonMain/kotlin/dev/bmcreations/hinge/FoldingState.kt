@@ -62,15 +62,6 @@ public data class FoldingState(
         )
     }
 
-    /**
-     * Member alias for the [paneLayout] extension.
-     *
-     * Kotlin callers should prefer `state.paneLayout(spec)`. This exists because top-level
-     * extensions export to Swift as free functions on a synthetic `HingeCoreKt` class, which
-     * reads badly from Swift; `state.resolvePaneLayout(spec:)` does not.
-     */
-    public fun resolvePaneLayout(spec: SplitSpec = SplitSpec()): PaneLayout = paneLayout(spec)
-
     public companion object {
         /**
          * The state every non-folding device reports, and the correct value to render on the
