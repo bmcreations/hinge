@@ -1,0 +1,11 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+.kotlin/
+
+# Built artifacts copied in by swift/build-framework.sh
+swift/HingeKit/Frameworks/*.xcframework
+swift/HingeKit/.build/

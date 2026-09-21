@@ -1,0 +1,35 @@
+# NOTE: Kotlin 2.4.20 is required -- Swift export only gained sealed-class support and
+# Swift-implements-Kotlin-interfaces in that release, and this library depends on both.
+# Compose Multiplatform tracks the latest Kotlin, but 1.12.0 predates 2.4.20; if the Compose
+# plugin rejects it, pin Kotlin to 2.4.0 for :hinge-compose or wait for the next CMP release.
+# Verify every version below resolves before the first real build.
+[versions]
+kotlin = "2.4.20"
+agp = "8.11.1"
+composeMultiplatform = "1.12.0"
+coroutines = "1.10.2"
+androidxWindow = "1.4.0"
+androidxCore = "1.16.0"
+androidxActivity = "1.10.1"
+androidxLifecycle = "2.9.1"
+androidMinSdk = "24"
+androidCompileSdk = "36"
+
+[libraries]
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+
+androidx-window = { module = "androidx.window:window", version.ref = "androidxWindow" }
+androidx-window-core = { module = "androidx.window:window-core", version.ref = "androidxWindow" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivity" }
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "androidxActivity" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidxLifecycle" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
