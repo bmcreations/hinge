@@ -35,10 +35,10 @@ enum class SimulatedPosture(val label: String) {
     fun resolve(live: FoldingState, width: Float, height: Float): FoldingState = when (this) {
         Live -> live
         Flat -> Postures.flat(width, height)
-        Book -> Postures.book(width, height, Postures.DEFAULT_HINGE_THICKNESS)
-        Tabletop -> Postures.tabletop(width, height, Postures.DEFAULT_HINGE_THICKNESS)
+        Book -> Postures.book(width, height)
+        Tabletop -> Postures.tabletop(width, height)
         Seamless -> Postures.seamlessBook(width, height)
-        Occlusion -> Postures.occlusionOnly(width, height, Postures.DEFAULT_OCCLUSION_THICKNESS)
+        Occlusion -> Postures.occlusionOnly(width, height)
         InactiveFold -> Postures.inactiveFold(width, height)
         Cover -> Postures.coverDisplay(width, height)
         Unknown -> Postures.unknown()

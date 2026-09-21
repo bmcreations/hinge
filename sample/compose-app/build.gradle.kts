@@ -12,9 +12,9 @@ kotlin {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
 
-    // A plain Objective-C framework, not Swift export. The iOS app's only Swift code is one
-    // line calling MainViewController(), so there is nothing here that benefits from Swift
-    // export -- and the standard Compose Multiplatform integration expects this shape.
+    // The umbrella framework the iOS app links against. Compose Multiplatform's iOS
+    // integration produces an Objective-C framework, and hinge-core is exported into it
+    // below so the Swift bridge can see HingeBridgeRegistry and friends.
     listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {
             baseName = "ComposeApp"

@@ -1,20 +1,14 @@
-# Samples
+# Sample
 
-Two apps, the same demo, so the platforms are directly comparable:
-
-| | |
-|---|---|
-| `compose-app` | Compose Multiplatform. One UI, runs on Android and iOS. |
-| `swift-app` | Native SwiftUI against HingeKit. |
-
-Both show a list/detail screen laid out by `FoldAwarePanes`, a posture simulator, and an
-inspector that prints what the SDK reported and what geometry it resolved to.
+`compose-app` is a Compose Multiplatform demo: one UI, running on Android and iOS. It shows a
+list/detail screen laid out by `FoldAwarePanes`, a posture simulator, and an inspector that
+prints what the SDK reported and what geometry it resolved to.
 
 ## The posture simulator is the point
 
 Foldable layout is close to untestable otherwise. Real postures need real hardware and a human
 holding the device, so without injection the only path anyone ever exercises is the flat one.
-The chip row forces any of these on any device or simulator:
+The chip row forces any of these on any device or emulator:
 
 | | What it catches |
 |---|---|
@@ -29,16 +23,18 @@ The chip row forces any of these on any device or simulator:
 It is driven by `Postures` in `hinge-core`, which ships in the main source set precisely so
 previews, screenshot tests and debug menus can all use it.
 
-Note that `Cover` shrinks the actual surface rather than just reporting a small `windowSize`.
-That is not cosmetic: the UI adapters measure themselves and override the reported size, so a
-simulated small window that does not shrink the surface proves nothing.
+Two details in the demo are load-bearing rather than cosmetic, and worth copying if you build
+your own simulator:
 
-For the same reason the simulator bar and inspector **overlay** the demo surface instead of
-stacking above and below it. Fold geometry is window-relative, so a panes container that does
-not start at the window origin would have its simulated regions built in one coordinate space
-and consumed in another. A horizontal fold would land off-centre and, near the minimum pane
-size, stop splitting altogether. If you copy this simulator into your own app, keep the
-injected state in window coordinates.
+**`Cover` shrinks the actual surface**, rather than just reporting a small `windowSize`. The UI
+adapters measure themselves and override the reported size, so a simulated small window that
+does not shrink the surface proves nothing.
+
+**The simulator bar and inspector overlay the demo surface** instead of stacking above and
+below it. Fold geometry is window-relative, so a panes container that did not start at the
+window origin would have its injected regions built in one coordinate space and consumed in
+another. A horizontal fold would land off-centre and, near the minimum pane size, stop
+splitting altogether. Keep injected state in window coordinates.
 
 ## Running
 
@@ -49,44 +45,28 @@ injected state in window coordinates.
 ```
 
 Then exercise it for real with the foldable emulators in Android Studio's device manager
-(Pixel Fold, 7.6" Fold-in), which support posture changes from the emulator's extended
-controls.
+(Pixel Fold, 7.6" Fold-in), which support posture changes from the extended controls.
 
 ### iOS
 
-Both iOS targets are declared as [XcodeGen](https://github.com/yonaskolb/XcodeGen) specs
-rather than checked-in `.xcodeproj` files — the pbxproj format is long, order-sensitive and
-merges badly, and a 30-line spec says the same thing.
+The iOS target is an [XcodeGen](https://github.com/yonaskolb/XcodeGen) spec rather than a
+checked-in `.xcodeproj` — the pbxproj format is long, order-sensitive and merges badly, and a
+30-line spec says the same thing.
 
 ```bash
 brew install xcodegen
-
-cd sample/swift-app        && xcodegen generate && open HingeSwiftDemo.xcodeproj
 cd sample/compose-app/iosApp && xcodegen generate && open HingeComposeDemo.xcodeproj
 ```
 
-Each project has a pre-build script that runs the matching Gradle task, so the Kotlin side
-builds automatically. Requires Xcode 27.1+.
+A pre-build script runs the matching Gradle task, so the Kotlin side builds automatically.
+Requires Xcode 27.1+.
 
-## Two bridges, one API
-
-The two iOS apps reach the Kotlin core through different export modes, and that is worth
-looking at:
-
-- `swift-app` uses **Swift export**, via `swift/HingeKit`. `Flow` is an `AsyncSequence`,
-  consumed with `for await`.
-- `compose-app/iosApp` uses the **Objective-C exporter**, because that is what Compose
-  Multiplatform's iOS integration produces. Its `DuoHingeSource.swift` is the second set of
-  sources the main README warns you would need.
-
-Compare the two `DuoHingeSource.swift` files. The differences are the import name, an
-`NSObject` superclass, and nothing else — same protocol, same method names, same snapshot
-type. That is what the Kotlin API's export-mode discipline buys: porting the bridge is a
-rename, not a rewrite.
+`iosApp/DuoHingeSource.swift` is the Swift half of the bridge and the only file in the
+repository that names an iPhone Duo API. Posture cannot come from Kotlin: those APIs are
+Swift-only and version-gated, so Swift observes and Kotlin interprets.
 
 ## Caveat
 
-Neither app has been compiled. There is no Xcode or Maven access in the environment these
-were written in, so treat every call site as reviewed-not-verified. The most likely breakages
-are the Duo API signatures in both `DuoHingeSource.swift` files and how Swift export names
-members of the sealed `PaneLayout` type.
+Nothing here has been compiled. There is no Xcode or Maven access in the environment this was
+written in, so treat every call site as reviewed rather than verified. The most likely
+breakages are the Duo API signatures in `DuoHingeSource.swift`.
