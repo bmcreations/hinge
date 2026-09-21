@@ -29,7 +29,7 @@ public val LocalFoldingState: ProvidableCompositionLocal<FoldingState> =
  *
  * On Android this needs the composition to be hosted by an `Activity`; an application-context
  * host reports [dev.bmcreations.hinge.FoldPosture.Unknown] rather than throwing, so previews
- * keep working. On iOS it reads the bridge registered by `HingeKit.install()`.
+ * keep working. On iOS it reads the bridge registered with `HingeBridgeRegistry`.
  */
 @Composable
 public expect fun rememberFoldingState(): FoldingState

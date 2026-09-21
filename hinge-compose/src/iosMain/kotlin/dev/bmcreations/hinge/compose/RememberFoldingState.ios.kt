@@ -10,8 +10,8 @@ import dev.bmcreations.hinge.foldingStateFlow
 /**
  * Observes the posture published by the Swift bridge.
  *
- * Returns an unknown posture until `HingeKit.install()` has run, and forever on any build that
- * never calls it. Install early — the `App` initializer or
+ * Returns an unknown posture until a bridge is registered with `HingeBridgeRegistry`, and
+ * forever on any build that never registers one. Register early — the `App` initializer or
  * `application(_:didFinishLaunchingWithOptions:)` — so the first composed frame is correct.
  */
 @Composable
