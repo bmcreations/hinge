@@ -19,7 +19,6 @@ kotlin {
     // by Compose Multiplatform apps, which produce their own umbrella framework. Emitting a
     // second static framework that also embeds the Kotlin runtime invites duplicate symbols
     // at link time.
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
 

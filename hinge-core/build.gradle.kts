@@ -18,7 +18,6 @@ kotlin {
     // Targets only, no framework binaries. iOS consumers reach this module through the
     // Compose Multiplatform app's own umbrella framework, which exports it. A second
     // framework here would embed the Kotlin runtime twice and invite duplicate symbols.
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
 

@@ -15,7 +15,7 @@ kotlin {
     // The umbrella framework the iOS app links against. Compose Multiplatform's iOS
     // integration produces an Objective-C framework, and hinge-core is exported into it
     // below so the Swift bridge can see HingeBridgeRegistry and friends.
-    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
