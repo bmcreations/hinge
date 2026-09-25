@@ -9,11 +9,11 @@ import UIKit
 //  a case or changes a signature between betas, the fix is confined to this file and
 //  nothing else moves.
 //
-//  Verify against the SDK you are building with:
-//    - UIHingeInteraction's initializer label (assumed: a single trailing update handler)
-//    - UIHinge.status case names (assumed: .unknown/.closed/.partiallyOpen/.fullyOpen)
-//    - UIHinge.angle units (assumed: radians)
-//    - UIView.reservedRegions(kind:options:) and ReservedRegion.frame/.isActive/.identifier
+//  Checked against the iOS 27.1 SDK (Xcode 27.1 beta, 27A9269):
+//    - UIHingeInteraction's handler takes (interaction, update); the hinge is `update.hinge`
+//    - UIHinge.status cases are .unknown/.closed/.partiallyOpen/.fullyOpen
+//    - UIHinge.angle is in radians
+//    - ReservedRegion exposes frame/margins/isActive/kind and an opaque `id`, not `identifier`
 //
 //  `@preconcurrency import` is deliberate: Kotlin-exported types and the block that
 //  `startObserving` takes carry no Sendable conformances, and this file hands them across
@@ -68,8 +68,10 @@ final class DuoHingeSource: NSObject {
 
     private func attachIfPossible() {
         guard #available(iOS 27.1, *), let window = Self.keyWindow() else { return }
-        let hingeInteraction = UIHingeInteraction { [weak self] context in
-            self?.publish(hinge: context.hinge)
+        // The handler also fires with a nil `hinge` when the interaction leaves a hierarchy
+        // that provides hinge updates; `publish` treats that as unknown.
+        let hingeInteraction = UIHingeInteraction { [weak self] _, update in
+            self?.publish(hinge: update.hinge)
         }
         window.addInteraction(hingeInteraction)
         interaction = hingeInteraction
@@ -160,7 +162,7 @@ final class DuoHingeSource: NSObject {
             absorb(
                 region.frame,
                 active: region.isActive,
-                identifier: region.identifier,
+                identifier: String(describing: region.id),
                 separating: true
             )
         }
@@ -168,7 +170,7 @@ final class DuoHingeSource: NSObject {
             absorb(
                 region.frame,
                 active: region.isActive,
-                identifier: region.identifier,
+                identifier: String(describing: region.id),
                 separating: false
             )
         }
@@ -208,7 +210,11 @@ final class DuoHingeSource: NSObject {
 extension DuoHingeSource: HingeBridge {
 
     nonisolated func startObserving(onSnapshot: @escaping (HingeSnapshot) -> Void) {
-        MainActor.assumeIsolated { self.begin(emit: onSnapshot) }
+        // Kotlin's block carries no Sendable conformance. Compose calls this on the main
+        // thread, and `assumeIsolated` traps if that ever stops being true, so the block
+        // never actually crosses an isolation boundary.
+        nonisolated(unsafe) let emit = onSnapshot
+        MainActor.assumeIsolated { self.begin(emit: emit) }
     }
 
     nonisolated func stopObserving() {
