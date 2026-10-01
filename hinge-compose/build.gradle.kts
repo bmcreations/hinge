@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.compose)
 }
@@ -10,9 +10,11 @@ plugins {
 kotlin {
     explicitApi()
 
-    androidTarget {
+    android {
+        namespace = "dev.bmcreations.hinge.compose"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
-        publishLibraryVariants("release")
     }
 
     // No framework binaries here on purpose. This module is consumed as a Gradle dependency
@@ -41,16 +43,3 @@ kotlin {
     }
 }
 
-android {
-    namespace = "dev.bmcreations.hinge.compose"
-    compileSdk = libs.versions.androidCompileSdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.androidMinSdk.get().toInt()
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}

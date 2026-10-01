@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
 }
 
 kotlin {
@@ -10,9 +10,13 @@ kotlin {
     // additions out of the ABI and forces return types to be written down.
     explicitApi()
 
-    androidTarget {
+    android {
+        namespace = "dev.bmcreations.hinge"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
-        publishLibraryVariants("release")
+        // Runs commonTest on the JVM as well as on the iOS simulator.
+        withHostTest {}
     }
 
     // Targets only, no framework binaries. iOS consumers reach this module through the
@@ -40,16 +44,3 @@ kotlin {
     }
 }
 
-android {
-    namespace = "dev.bmcreations.hinge"
-    compileSdk = libs.versions.androidCompileSdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.androidMinSdk.get().toInt()
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}

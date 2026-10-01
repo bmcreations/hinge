@@ -24,3 +24,4 @@ rootProject.name = "hinge"
 include(":hinge-core")
 include(":hinge-compose")
 include(":sample:compose-app")
+include(":sample:android-app")
