@@ -70,10 +70,14 @@ SplitSpec(
 ## Build
 
 ```bash
-gradle wrapper --gradle-version 8.14     # once; no wrapper jar is checked in
 ./gradlew :hinge-core:allTests           # the layout engine's contract tests
-./gradlew :sample:compose-app:installDebug
+./gradlew :sample:android-app:installDebug
 ```
+
+The build needs Gradle 9.7 (the wrapper), JDK 17+, and Android SDK platform 37. AGP 9 does
+not allow `com.android.application` alongside the multiplatform plugin, so the sample's
+Android entry point is its own module, `sample/android-app`, and the shared UI in
+`sample/compose-app` is a library.
 
 ### iOS
 
@@ -134,6 +138,8 @@ that one file. Its header lists exactly which signatures to re-verify against yo
 **Compose: `FoldAwarePanes` needs bounded constraints.** Inside a scrolling parent it has no
 extent to divide and will measure the primary pane alone.
 
-**Nothing here has been compiled.** It was written without Maven or Xcode access. The layout
-engine's arithmetic was verified by porting it and running the edge cases, and every file has
-been through independent review, but treat call sites as reviewed rather than verified.
+**What has actually run.** `hinge-core`'s tests pass on the Android unit-test and
+`iosSimulatorArm64` targets. The sample builds with Xcode 27.1 and runs on the iPhone Duo
+simulator, where `DuoHingeSource` reports Flat, Book (a 40pt separating region in the centre,
+with list/detail split around it) and Closed (a 466x678 cover display). The Android sample
+builds, but has not yet been run on a foldable device or emulator.

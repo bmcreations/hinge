@@ -1,6 +1,8 @@
 # Sample
 
-`compose-app` is a Compose Multiplatform demo: one UI, running on Android and iOS. It shows a
+`compose-app` is a Compose Multiplatform demo: one UI, running on Android and iOS. `android-app`
+is the Android entry point only (`MainActivity` and the manifest), because AGP 9 does not allow
+an application module to also apply the multiplatform plugin. It shows a
 list/detail screen laid out by `FoldAwarePanes`, a posture simulator, and an inspector that
 prints what the SDK reported and what geometry it resolved to.
 
@@ -41,7 +43,7 @@ splitting altogether. Keep injected state in window coordinates.
 ### Android
 
 ```bash
-./gradlew :sample:compose-app:installDebug
+./gradlew :sample:android-app:installDebug
 ```
 
 Then exercise it for real with the foldable emulators in Android Studio's device manager
@@ -65,8 +67,8 @@ Requires Xcode 27.1+.
 repository that names an iPhone Duo API. Posture cannot come from Kotlin: those APIs are
 Swift-only and version-gated, so Swift observes and Kotlin interprets.
 
-## Caveat
+## Status
 
-Nothing here has been compiled. There is no Xcode or Maven access in the environment this was
-written in, so treat every call site as reviewed rather than verified. The most likely
-breakages are the Duo API signatures in `DuoHingeSource.swift`.
+The iOS app runs on the iPhone Duo simulator (Xcode 27.1) and reports live Flat, Book and
+Closed postures. The Android app builds, but has not yet been run on a foldable device or
+emulator.
