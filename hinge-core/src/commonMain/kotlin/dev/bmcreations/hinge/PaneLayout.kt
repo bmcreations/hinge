@@ -38,7 +38,7 @@ public sealed interface PaneLayout {
  * Resolves [this] state and [spec] into concrete pane geometry.
  *
  * This is the function the whole library exists to provide. Everything else — the platform
- * sources, the Compose and SwiftUI adapters — is plumbing that feeds it or draws its result.
+ * sources and the Compose adapter — is plumbing that feeds it or draws its result.
  *
  * It is a pure function, so it is worth calling directly in tests against synthetic
  * [FoldingState] values rather than only through the UI layers.

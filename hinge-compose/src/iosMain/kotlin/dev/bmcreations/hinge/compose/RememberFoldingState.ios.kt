@@ -6,6 +6,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import dev.bmcreations.hinge.FoldingState
 import dev.bmcreations.hinge.foldingStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 /**
  * Observes the posture published by the Swift bridge.
@@ -15,8 +17,16 @@ import dev.bmcreations.hinge.foldingStateFlow
  * `application(_:didFinishLaunchingWithOptions:)` — so the first composed frame is correct.
  */
 @Composable
-public actual fun rememberFoldingState(): FoldingState {
-    val flow = remember { foldingStateFlow() }
+public actual fun rememberFoldingState(includeHingeAngle: Boolean): FoldingState {
+    val flow = remember(includeHingeAngle) {
+        // The bridge always reports an angle. Dropping it here, then deduplicating, is what
+        // keeps a moving hinge from recomposing readers that did not ask for it.
+        if (includeHingeAngle) {
+            foldingStateFlow()
+        } else {
+            foldingStateFlow().map { it.copy(hingeAngle = null) }.distinctUntilChanged()
+        }
+    }
     val state by flow.collectAsState(initial = FoldingState())
     return state
 }

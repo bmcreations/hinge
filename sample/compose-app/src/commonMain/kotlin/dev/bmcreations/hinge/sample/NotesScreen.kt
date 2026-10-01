@@ -31,48 +31,44 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.bmcreations.hinge.PaneLayout
-import dev.bmcreations.hinge.compose.FoldAwarePanes
+import dev.bmcreations.hinge.compose.ListDetailPanes
+import dev.bmcreations.hinge.compose.LocalPaneLayout
 import dev.bmcreations.hinge.compose.rememberOcclusionPadding
-import dev.bmcreations.hinge.compose.rememberPaneLayout
 
 /**
  * List/detail, the canonical two-pane case.
  *
- * Note what the app does and does not decide. `FoldAwarePanes` owns the geometry. The app owns
- * navigation, which is why it reads `rememberPaneLayout()` separately: whether tapping a row
- * replaces the screen or just updates the neighbouring pane is a product decision, and the
- * library deliberately refuses to make it.
+ * `ListDetailPanes` decides one pane or two from its own measured bounds, and the app keeps
+ * navigation: [selected] is plain app state, and whether a tap replaces the list or fills the
+ * neighbouring pane follows from the layout the panes report through `LocalPaneLayout`.
  *
- * `rememberPaneLayout()` resolves *window* geometry while `FoldAwarePanes` resolves its own
- * local geometry. They agree here only because this screen fills the window. If you paste this
- * into a screen that does not, drive the two-pane decision from the same geometry the panes
- * use, or the detail pane can become unreachable: the list renders, the secondary slot is
- * never subcomposed, and the tap goes nowhere.
+ * Open a note in the Flat posture, then switch to Book: the same detail moves to the trailing
+ * pane with its state intact.
  */
 @Composable
 fun NotesScreen(contentPadding: PaddingValues) {
     var selected by remember { mutableStateOf<Note?>(null) }
-    val twoPane = rememberPaneLayout() is PaneLayout.Split
 
-    FoldAwarePanes(
+    ListDetailPanes(
+        showDetail = selected != null,
         // Insets the panes away from any occluding region that reaches a window edge. With
         // the Occlusion posture selected, watch the whole layout shift clear of the strip.
         modifier = Modifier.fillMaxSize().padding(rememberOcclusionPadding()),
-        primary = {
-            // In one-pane mode the primary slot carries the whole navigation stack.
-            if (!twoPane && selected != null) {
-                NoteDetail(note = selected, onBack = { selected = null }, contentPadding = contentPadding)
-            } else {
-                NoteList(
-                    selected = selected.takeIf { twoPane },
-                    onSelect = { selected = it },
-                    contentPadding = contentPadding,
-                )
-            }
+        list = {
+            val twoPane = LocalPaneLayout.current is PaneLayout.Split
+            NoteList(
+                selected = selected.takeIf { twoPane },
+                onSelect = { selected = it },
+                contentPadding = contentPadding,
+            )
         },
-        secondary = {
-            // Never composed at all in one-pane mode: FoldAwarePanes subcomposes.
-            NoteDetail(note = selected, onBack = null, contentPadding = contentPadding)
+        detail = {
+            val twoPane = LocalPaneLayout.current is PaneLayout.Split
+            NoteDetail(
+                note = selected,
+                onBack = if (twoPane) null else ({ selected = null }),
+                contentPadding = contentPadding,
+            )
         },
     )
 }

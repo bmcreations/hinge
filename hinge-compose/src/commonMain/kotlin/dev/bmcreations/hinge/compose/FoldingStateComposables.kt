@@ -30,9 +30,14 @@ public val LocalFoldingState: ProvidableCompositionLocal<FoldingState> =
  * On Android this needs the composition to be hosted by an `Activity`; an application-context
  * host reports [dev.bmcreations.hinge.FoldPosture.Unknown] rather than throwing, so previews
  * keep working. On iOS it reads the bridge registered with `HingeBridgeRegistry`.
+ *
+ * [includeHingeAngle] fills [FoldingState.hingeAngle]. It is off by default because every
+ * angle sample is a new state, so turning it on recomposes readers continuously while the
+ * device moves, for a value that must not drive layout. On Android it also needs API 30 and
+ * an OEM hinge sensor.
  */
 @Composable
-public expect fun rememberFoldingState(): FoldingState
+public expect fun rememberFoldingState(includeHingeAngle: Boolean = false): FoldingState
 
 /**
  * Publishes [state] to the subtree.
@@ -70,7 +75,10 @@ public fun ProvideFoldingState(
  * ```
  *
  * Note this is window geometry. If you need geometry for a component that is not full-window,
- * use [FoldAwarePanes], which does the coordinate translation for you.
+ * use [FoldAwarePanes], which does the coordinate translation for you. Inside pane content,
+ * read [LocalPaneLayout] instead: it is the geometry the panes were measured with, so it cannot
+ * disagree with what is on screen. For list/detail, [ListDetailPanes] makes the decision for
+ * you.
  */
 @Composable
 public fun rememberPaneLayout(

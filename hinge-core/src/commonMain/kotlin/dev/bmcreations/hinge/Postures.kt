@@ -120,7 +120,7 @@ public object Postures {
      * or a seam crossing otherwise-continuous content.
      *
      * This must not produce a split. Content should be inset away from it instead, which is
-     * what `rememberOcclusionPadding` and `occlusionPadding(_:)` are for.
+     * what `rememberOcclusionPadding` is for.
      */
     public fun occlusionOnly(width: Float, height: Float, thickness: Float): FoldingState =
         FoldingState(

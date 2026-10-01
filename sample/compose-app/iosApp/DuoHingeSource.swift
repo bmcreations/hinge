@@ -41,6 +41,10 @@ final class DuoHingeSource: NSObject {
     private var emit: ((HingeSnapshot) -> Void)?
     private var interaction: UIInteraction?
     private var notificationTokens: [NSObjectProtocol] = []
+    private var geometryObservation: NSKeyValueObservation?
+    /// The last `UIHinge` the interaction delivered, as `Any?` for the same reason as
+    /// `publish(hinge:)`. Geometry-only republishes reuse it so they never reset the posture.
+    private var lastHinge: Any?
 
     // MARK: - Lifecycle
 
@@ -61,6 +65,9 @@ final class DuoHingeSource: NSObject {
         interaction = nil
         notificationTokens.forEach { NotificationCenter.default.removeObserver($0) }
         notificationTokens.removeAll()
+        geometryObservation?.invalidate()
+        geometryObservation = nil
+        lastHinge = nil
         emit = nil
     }
 
@@ -71,15 +78,21 @@ final class DuoHingeSource: NSObject {
         // The handler also fires with a nil `hinge` when the interaction leaves a hierarchy
         // that provides hinge updates; `publish` treats that as unknown.
         let hingeInteraction = UIHingeInteraction { [weak self] _, update in
+            self?.lastHinge = update.hinge
             self?.publish(hinge: update.hinge)
         }
         window.addInteraction(hingeInteraction)
         interaction = hingeInteraction
     }
 
-    /// The window can resize without the hinge moving. The snapshot's window size is only a
-    /// fallback — `FoldAwarePanes` measures itself and overrides it — but keeping it fresh
-    /// avoids a stale first frame.
+    /// The window can resize without the hinge moving: rotation, or a size change in a
+    /// multi-window scene. The hinge interaction does not report those, so without a second
+    /// trigger the snapshot keeps the old window size and regions, and window-level readers
+    /// such as `rememberPaneLayout()` disagree with what is on screen.
+    ///
+    /// `effectiveGeometry` is KVO-observable and changes on rotation and on scene resize. The
+    /// publish is deferred one turn of the main queue so the window has laid out at its new
+    /// size before the reserved regions are read.
     ///
     /// Note this deliberately does *not* observe `UIDevice.orientationDidChangeNotification`:
     /// UIKit only posts that while `beginGeneratingDeviceOrientationNotifications()` is
@@ -90,9 +103,20 @@ final class DuoHingeSource: NSObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.publish(hinge: nil) }
+            MainActor.assumeIsolated { self?.republishGeometry() }
         }
         notificationTokens = [token]
+
+        geometryObservation = Self.keyWindow()?.windowScene?.observe(
+            \.effectiveGeometry,
+            options: [.new]
+        ) { [weak self] _, _ in
+            DispatchQueue.main.async { self?.republishGeometry() }
+        }
+    }
+
+    private func republishGeometry() {
+        publish(hinge: lastHinge)
     }
 
     // MARK: - Publishing

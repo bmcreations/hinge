@@ -21,11 +21,11 @@ import kotlinx.coroutines.flow.flowOf
  * rather than throwing. Everything downstream renders that as a single pane.
  */
 @Composable
-public actual fun rememberFoldingState(): FoldingState {
+public actual fun rememberFoldingState(includeHingeAngle: Boolean): FoldingState {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
-    val flow: Flow<FoldingState> = remember(activity) {
-        if (activity == null) flowOf(FoldingState()) else foldingStateFlow(activity)
+    val flow: Flow<FoldingState> = remember(activity, includeHingeAngle) {
+        if (activity == null) flowOf(FoldingState()) else foldingStateFlow(activity, includeHingeAngle)
     }
     // collectAsStateWithLifecycle, not collectAsState: foldingStateFlow registers a
     // WindowInfoTracker subscription (and, when enabled, a SensorEventListener). Plain

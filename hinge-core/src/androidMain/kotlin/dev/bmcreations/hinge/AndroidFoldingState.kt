@@ -7,11 +7,13 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
+import android.view.View
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import androidx.window.layout.WindowLayoutInfo
 import androidx.window.layout.WindowMetricsCalculator
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -49,10 +52,29 @@ public fun foldingStateFlow(
 ): Flow<FoldingState> =
     combine(
         WindowInfoTracker.getOrCreate(activity).windowLayoutInfo(activity),
+        windowResizes(activity),
         if (includeHingeAngle) hingeAngleFlow(activity) else flowOf(null),
-    ) { layoutInfo, angle ->
+    ) { layoutInfo, _, angle ->
         layoutInfo.toFoldingState(activity, angle)
     }.distinctUntilChanged()
+
+/**
+ * Ticks once on collection and again whenever the window's decor view changes size.
+ *
+ * `windowLayoutInfo` emits when the fold features change, not when the window does. On a
+ * device with no fold, or an Activity that handles rotation itself through `configChanges`,
+ * the window can resize with no new layout info, which would leave [FoldingState.windowSize]
+ * describing the previous size. Recomputing on each resize keeps it current.
+ */
+private fun windowResizes(activity: Activity): Flow<Unit> = callbackFlow {
+    trySend(Unit)
+    val decor = activity.window.decorView
+    val listener = View.OnLayoutChangeListener { _, l, t, r, b, oldL, oldT, oldR, oldB ->
+        if (r - l != oldR - oldL || b - t != oldB - oldT) trySend(Unit)
+    }
+    decor.addOnLayoutChangeListener(listener)
+    awaitClose { decor.removeOnLayoutChangeListener(listener) }
+}.flowOn(Dispatchers.Main.immediate)
 
 /**
  * [FoldingStateSource] wrapper for consumers that want a hot, always-readable value.
@@ -75,11 +97,20 @@ public fun foldingStateSource(
 internal fun WindowLayoutInfo.toFoldingState(
     activity: Activity,
     angle: HingeAngle?,
-): FoldingState {
-    val density = activity.resources.displayMetrics.density
-    val size = activity.windowSizeInDp()
-    val folds = displayFeatures.filterIsInstance<FoldingFeature>()
+): FoldingState = foldingState(
+    folds = displayFeatures.filterIsInstance<FoldingFeature>(),
+    density = activity.resources.displayMetrics.density,
+    windowSize = activity.windowSizeInDp(),
+    angle = angle,
+)
 
+/** The mapping itself, free of `Activity` so it can be tested on the host. */
+internal fun foldingState(
+    folds: List<FoldingFeature>,
+    density: Float,
+    windowSize: FoldSize,
+    angle: HingeAngle?,
+): FoldingState {
     val posture = when {
         folds.isEmpty() -> FoldPosture.Flat
         else -> folds.first().toPosture()
@@ -87,7 +118,7 @@ internal fun WindowLayoutInfo.toFoldingState(
 
     return FoldingState(
         posture = posture,
-        windowSize = size,
+        windowSize = windowSize,
         regions = folds.map { it.toRegion(density) },
         hingeAngle = angle,
     )

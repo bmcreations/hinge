@@ -29,25 +29,38 @@ import dev.bmcreations.hinge.FoldingState
 public fun rememberOcclusionPadding(
     state: FoldingState = LocalFoldingState.current,
 ): PaddingValues = remember(state) {
+    val insets = state.occlusionInsets()
+    // Absolute, not start/end: these come from physical window coordinates. In an RTL layout
+    // `start` resolves to the physical right edge, which would pad the wrong side and draw
+    // content straight under the hardware.
+    PaddingValues.Absolute(
+        left = insets.left.dp,
+        top = insets.top.dp,
+        right = insets.right.dp,
+        bottom = insets.bottom.dp,
+    )
+}
+
+/** Per-edge insets in logical points. */
+internal data class OcclusionInsets(val left: Float, val top: Float, val right: Float, val bottom: Float)
+
+/** The geometry behind [rememberOcclusionPadding], kept free of Compose so it can be tested. */
+internal fun FoldingState.occlusionInsets(): OcclusionInsets {
     var left = 0f
     var top = 0f
     var right = 0f
     var bottom = 0f
 
-    state.occludingRegions.forEach { region ->
+    occludingRegions.forEach { region ->
         if (!region.isSubstantial) return@forEach
         when {
-            region.touchesLeft(state) -> left = maxOf(left, region.bounds.right)
-            region.touchesRight(state) -> right = maxOf(right, state.windowSize.width - region.bounds.left)
-            region.touchesTop(state) -> top = maxOf(top, region.bounds.bottom)
-            region.touchesBottom(state) -> bottom = maxOf(bottom, state.windowSize.height - region.bounds.top)
+            region.touchesLeft(this) -> left = maxOf(left, region.bounds.right)
+            region.touchesRight(this) -> right = maxOf(right, windowSize.width - region.bounds.left)
+            region.touchesTop(this) -> top = maxOf(top, region.bounds.bottom)
+            region.touchesBottom(this) -> bottom = maxOf(bottom, windowSize.height - region.bounds.top)
         }
     }
-
-    // Absolute, not start/end: these come from physical window coordinates. In an RTL layout
-    // `start` resolves to the physical right edge, which would pad the wrong side and draw
-    // content straight under the hardware.
-    PaddingValues.Absolute(left = left.dp, top = top.dp, right = right.dp, bottom = bottom.dp)
+    return OcclusionInsets(left, top, right, bottom)
 }
 
 private const val EDGE_TOLERANCE = 0.5f

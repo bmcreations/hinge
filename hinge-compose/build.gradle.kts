@@ -36,6 +36,11 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+        // UI tests run on the iOS simulator only: on the Android host they would need
+        // Robolectric.
+        iosTest.dependencies {
+            implementation(libs.compose.ui.test)
+        }
         androidMain.dependencies {
             implementation(libs.androidx.activity.ktx)
             implementation(libs.androidx.lifecycle.runtime.compose)

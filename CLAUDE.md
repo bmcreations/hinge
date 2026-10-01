@@ -8,7 +8,9 @@ Kotlin Multiplatform SDK for adaptive layout around a physical fold: Android fol
 - `hinge-core` — pure Kotlin model and the pane layout engine (`FoldingState.paneLayout`),
   plus the Android source (`androidMain`) and the iOS bridge (`iosMain`).
 - `hinge-compose` — Compose Multiplatform adapter (`ProvideFoldingState`, `FoldAwarePanes`,
-  `rememberPaneLayout`, `rememberOcclusionPadding`).
+  `ListDetailPanes`, `LocalPaneLayout`, `rememberPaneLayout`, `rememberOcclusionPadding`). Both
+  pane composables sit on `PaneHost`, which subcomposes each pane by content key so state
+  survives single/split changes.
 - `sample/compose-app` — the shared Compose UI for Android and iOS (a KMP library), with a
   posture simulator. `iosApp/` is an XcodeGen spec; the generated `.xcodeproj` is gitignored.
 - `sample/android-app` — Android entry point only (`MainActivity`, manifest, theme).
@@ -21,6 +23,11 @@ Kotlin Multiplatform SDK for adaptive layout around a physical fold: Android fol
 ./gradlew :sample:android-app:installDebug
 cd sample/compose-app/iosApp && xcodegen generate   # then build HingeComposeDemo in Xcode 27.1+
 ```
+
+The Duo APIs ship in the Xcode 27.1 SDK. If `xcode-select` points at an older Xcode, build with
+`DEVELOPER_DIR=/Applications/Xcode-27.1.0-Beta.app/Contents/Developer`, and pass
+`ARCHS=arm64` for a generic simulator destination (CMP 1.12 publishes no `iosX64`). UI tests
+for `hinge-compose` run with `./gradlew :hinge-compose:iosSimulatorArm64Test`.
 
 The Xcode pre-build script runs `embedAndSignAppleFrameworkForXcode`, so the Kotlin
 framework builds from Xcode.

@@ -48,12 +48,24 @@ setContent {
 }
 ```
 
-Branch on the layout yourself when navigation depends on it:
+For list/detail, `ListDetailPanes` shows both panes when the layout splits and one at a time
+when it does not. The detail keeps its state when the device folds or unfolds:
 
 ```kotlin
-val twoPane = rememberPaneLayout() is PaneLayout.Split
-BackHandler(enabled = !twoPane && selected != null) { selected = null }
+ListDetailPanes(
+    showDetail = selected != null,
+    list = { ConversationList(onSelect = { selected = it }) },
+    detail = {
+        val twoPane = LocalPaneLayout.current is PaneLayout.Split
+        BackHandler(enabled = !twoPane) { selected = null }
+        ConversationDetail(selected, showBack = !twoPane)
+    },
+)
 ```
+
+Inside pane content, read `LocalPaneLayout` rather than `rememberPaneLayout()`: it is the layout
+the panes were measured with, so it cannot disagree with what is on screen. In a right-to-left
+layout the primary pane goes on the right; pass `mirrorInRtl = false` to keep it on the left.
 
 ### Tuning
 
@@ -116,7 +128,11 @@ that is not full-window will happily split at a fold line that is nowhere near i
 `FoldingState.inLocalSpace()` is the fix, and `FoldAwarePanes` calls it for you. If you consume
 `FoldingState` in your own layout code, call it yourself. Note also that `rememberPaneLayout()`
 resolves *window* geometry while `FoldAwarePanes` resolves its own local geometry: they agree
-only when the panes fill the window.
+only when the panes fill the window. `LocalPaneLayout` avoids the question.
+
+**Hinge angle is off by default.** `rememberFoldingState(includeHingeAngle = true)` fills
+`FoldingState.hingeAngle`, at the cost of a new state for every sensor sample. Layout never
+reads it.
 
 **`FoldPosture.Unknown` is a normal state, not a loading state.** Every non-folding device
 reports it forever. Never gate rendering on it.

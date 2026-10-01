@@ -16,7 +16,7 @@ kotlin {
         minSdk = libs.versions.androidMinSdk.get().toInt()
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
         // Runs commonTest on the JVM as well as on the iOS simulator.
-        withHostTest {}
+        withHostTest { isReturnDefaultValues = true }
     }
 
     // Targets only, no framework binaries. iOS consumers reach this module through the
