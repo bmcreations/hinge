@@ -90,7 +90,7 @@ public fun foldingStateSource(
     override val state: StateFlow<FoldingState> = foldingStateFlow(activity, includeHingeAngle).stateIn(
         scope = scope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = FoldingState.flat(activity.windowSizeInDp()),
+        initialValue = FoldingState(windowSize = activity.windowSizeInDp()),
     )
 }
 
@@ -111,8 +111,9 @@ internal fun foldingState(
     windowSize: FoldSize,
     angle: HingeAngle?,
 ): FoldingState {
+    // No fold in this window: a non-folding device, or a foldable's cover display.
     val posture = when {
-        folds.isEmpty() -> FoldPosture.Flat
+        folds.isEmpty() -> FoldPosture.Unknown
         else -> folds.first().toPosture()
     }
 

@@ -64,8 +64,8 @@ public data class FoldingState(
 
     public companion object {
         /**
-         * The state every non-folding device reports, and the correct value to render on the
-         * very first frame before the platform has published anything.
+         * [FoldPosture.Flat] with no regions. Platform sources report a window with no fold as
+         * [FoldPosture.Unknown], not this.
          */
         public fun flat(windowSize: FoldSize): FoldingState =
             FoldingState(posture = FoldPosture.Flat, windowSize = windowSize)
