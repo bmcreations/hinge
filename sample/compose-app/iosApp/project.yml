@@ -6,7 +6,7 @@ name: HingeComposeDemo
 options:
   bundleIdPrefix: dev.bmcreations.hinge
   deploymentTarget:
-    iOS: "18.0"
+    iOS: "27.1"
   createIntermediateGroups: true
 
 targets:

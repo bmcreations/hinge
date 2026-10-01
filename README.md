@@ -113,9 +113,10 @@ HingeBridgeRegistry.shared.install(bridge: DuoHingeSource())
 ```
 
 `sample/compose-app/iosApp/DuoHingeSource.swift` is a complete implementation, and is the only
-file in the repository that names an iPhone Duo API. Building it needs **Xcode 27.1+**; the
-resulting binary runs on **iOS 18+**, because every Duo reference sits behind
-`if #available(iOS 27.1, *)` and older systems get an unknown posture, which renders as a
+file in the repository that names an iPhone Duo API. Building it needs **Xcode 27.1+**, and
+the sample app's deployment target is **iOS 27.1**, the first release with the Duo APIs. If you
+copy the file into an app that supports older systems, put each Duo reference behind
+`if #available(iOS 27.1, *)` and publish an unknown posture otherwise, which renders as a
 single pane.
 
 ## Things worth knowing before you rely on this

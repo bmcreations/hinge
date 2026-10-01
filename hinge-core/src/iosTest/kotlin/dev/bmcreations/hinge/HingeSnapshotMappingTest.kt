@@ -40,6 +40,16 @@ class HingeSnapshotMappingTest {
     }
 
     @Test
+    fun partiallyOpenWithNoActiveRegionTakesTheAxisFromTheWindowShape() {
+        // The Duo's tall window is UIKit portrait, and its fold runs side to side.
+        val tall = HingeSnapshot(HingeStatus.PARTIALLY_OPEN, -1.0, 669.0, 951.0, emptyList())
+        val wide = HingeSnapshot(HingeStatus.PARTIALLY_OPEN, -1.0, 951.0, 669.0, emptyList())
+
+        assertEquals(FoldPosture.Tabletop, tall.toFoldingState().posture)
+        assertEquals(FoldPosture.Book, wide.toFoldingState().posture)
+    }
+
+    @Test
     fun geometryCarriesOverInPoints() {
         val state = snapshot(HingeStatus.PARTIALLY_OPEN, -1.0, region(390.0, 0.0, 410.0, 600.0)).toFoldingState()
 

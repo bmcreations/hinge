@@ -42,9 +42,9 @@ final class DuoHingeSource: NSObject {
     private var interaction: UIInteraction?
     private var notificationTokens: [NSObjectProtocol] = []
     private var geometryObservation: NSKeyValueObservation?
-    /// The last `UIHinge` the interaction delivered, as `Any?` for the same reason as
-    /// `publish(hinge:)`. Geometry-only republishes reuse it so they never reset the posture.
-    private var lastHinge: Any?
+    /// The last `UIHinge` the interaction delivered. Geometry-only republishes reuse it so they
+    /// never reset the posture.
+    private var lastHinge: UIHinge?
 
     // MARK: - Lifecycle
 
@@ -53,8 +53,8 @@ final class DuoHingeSource: NSObject {
         // second interaction to the window and leak the previous notification observers.
         teardown()
         self.emit = emit
+        observeActivation()
         attachIfPossible()
-        observeGeometryChanges()
         publish(hinge: nil)
     }
 
@@ -73,8 +73,15 @@ final class DuoHingeSource: NSObject {
 
     // MARK: - Observation
 
+    /// Attaches the hinge interaction and the geometry observation to the key window. Either
+    /// step is skipped when it is already done, so this is safe to call again: observation can
+    /// start before the app has a window, and then the next activation finishes the job.
     private func attachIfPossible() {
-        guard #available(iOS 27.1, *), let window = Self.keyWindow() else { return }
+        guard let window = Self.keyWindow() else { return }
+        if geometryObservation == nil {
+            observeGeometry(of: window)
+        }
+        guard interaction == nil else { return }
         // The handler also fires with a nil `hinge` when the interaction leaves a hierarchy
         // that provides hinge updates; `publish` treats that as unknown.
         let hingeInteraction = UIHingeInteraction { [weak self] _, update in
@@ -83,6 +90,22 @@ final class DuoHingeSource: NSObject {
         }
         window.addInteraction(hingeInteraction)
         interaction = hingeInteraction
+    }
+
+    /// Republishes on every activation, and retries the attach in case observation began before
+    /// there was a window to attach to.
+    private func observeActivation() {
+        let token = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.attachIfPossible()
+                self?.republishGeometry()
+            }
+        }
+        notificationTokens = [token]
     }
 
     /// The window can resize without the hinge moving: rotation, or a size change in a
@@ -97,17 +120,8 @@ final class DuoHingeSource: NSObject {
     /// Note this deliberately does *not* observe `UIDevice.orientationDidChangeNotification`:
     /// UIKit only posts that while `beginGeneratingDeviceOrientationNotifications()` is
     /// active, so an observer for it would silently never fire.
-    private func observeGeometryChanges() {
-        let token = NotificationCenter.default.addObserver(
-            forName: UIApplication.didBecomeActiveNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.republishGeometry() }
-        }
-        notificationTokens = [token]
-
-        geometryObservation = Self.keyWindow()?.windowScene?.observe(
+    private func observeGeometry(of window: UIWindow) {
+        geometryObservation = window.windowScene?.observe(
             \.effectiveGeometry,
             options: [.new]
         ) { [weak self] _, _ in
@@ -121,26 +135,15 @@ final class DuoHingeSource: NSObject {
 
     // MARK: - Publishing
 
-    /// Builds and emits a snapshot. `hinge` is `Any?` so that the call sites above, which are
-    /// not inside an availability check, never have to name an iOS 27.1 type.
-    private func publish(hinge: Any?) {
+    /// Builds and emits a snapshot.
+    private func publish(hinge: UIHinge?) {
         guard let emit else { return }
         let window = Self.keyWindow()
         let size = window?.bounds.size ?? .zero
 
-        var status = SnapshotStatus.unknown
-        var angle = -1.0
-        var regions: [HingeSnapshotRegion] = []
-
-        if #available(iOS 27.1, *) {
-            if let hinge = hinge as? UIHinge {
-                status = Self.status(of: hinge)
-                angle = Double(hinge.angle)
-            }
-            if let window {
-                regions = Self.reservedRegions(in: window)
-            }
-        }
+        let status = hinge.map(Self.status(of:)) ?? .unknown
+        let angle = hinge.map { Double($0.angle) } ?? -1.0
+        let regions = window.map(Self.reservedRegions(in:)) ?? []
 
         emit(
             HingeSnapshot(
@@ -153,7 +156,6 @@ final class DuoHingeSource: NSObject {
         )
     }
 
-    @available(iOS 27.1, *)
     private static func status(of hinge: UIHinge) -> SnapshotStatus {
         switch hinge.status {
         case .closed: return .closed
@@ -166,7 +168,6 @@ final class DuoHingeSource: NSObject {
     /// Reads both region kinds and merges them, because a single physical region is routinely
     /// reported as both a division and an occlusion, and the shared model treats those as two
     /// independent properties of one region rather than as two regions.
-    @available(iOS 27.1, *)
     private static func reservedRegions(in view: UIView) -> [HingeSnapshotRegion] {
         var merged: [String: MutableRegion] = [:]
 

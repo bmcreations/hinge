@@ -40,9 +40,10 @@ simulator.
 - **Kotlin stays at or above the compiler CMP's klibs were built with.** CMP 1.12.0 needs
   Kotlin 2.3.20; older compilers fail with "KLIB resolver: Could not find". Re-check the klib
   manifest's `compiler_version` when bumping CMP. CMP 1.12 publishes no `iosX64`.
-- **Only `sample/compose-app/iosApp/DuoHingeSource.swift` names an iPhone Duo API.** Keep
-  every Duo type behind `if #available(iOS 27.1, *)` there, and keep `HingeSnapshot` made of
-  primitives. Don't add a second copy of the bridge.
+- **Only `sample/compose-app/iosApp/DuoHingeSource.swift` names an iPhone Duo API.** The
+  sample's deployment target is iOS 27.1, the first Duo release, so no availability checks
+  are needed there. Keep `HingeSnapshot` made of primitives. Don't add a second copy of the
+  bridge.
 - **Geometry is logical points** (`dp` / UIKit points). Platform sources divide out density.
 - **Hinge angle is not a layout input.** Layout reads reserved regions and posture only.
 - **`FoldPosture.Unknown` is a normal state, not loading.** Every non-folding device reports it
