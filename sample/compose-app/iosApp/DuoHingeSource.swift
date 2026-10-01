@@ -53,8 +53,8 @@ final class DuoHingeSource: NSObject {
         // second interaction to the window and leak the previous notification observers.
         teardown()
         self.emit = emit
+        observeActivation()
         attachIfPossible()
-        observeGeometryChanges()
         publish(hinge: nil)
     }
 
@@ -73,8 +73,15 @@ final class DuoHingeSource: NSObject {
 
     // MARK: - Observation
 
+    /// Attaches the hinge interaction and the geometry observation to the key window. Either
+    /// step is skipped when it is already done, so this is safe to call again: observation can
+    /// start before the app has a window, and then the next activation finishes the job.
     private func attachIfPossible() {
         guard let window = Self.keyWindow() else { return }
+        if geometryObservation == nil {
+            observeGeometry(of: window)
+        }
+        guard interaction == nil else { return }
         // The handler also fires with a nil `hinge` when the interaction leaves a hierarchy
         // that provides hinge updates; `publish` treats that as unknown.
         let hingeInteraction = UIHingeInteraction { [weak self] _, update in
@@ -83,6 +90,22 @@ final class DuoHingeSource: NSObject {
         }
         window.addInteraction(hingeInteraction)
         interaction = hingeInteraction
+    }
+
+    /// Republishes on every activation, and retries the attach in case observation began before
+    /// there was a window to attach to.
+    private func observeActivation() {
+        let token = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.attachIfPossible()
+                self?.republishGeometry()
+            }
+        }
+        notificationTokens = [token]
     }
 
     /// The window can resize without the hinge moving: rotation, or a size change in a
@@ -97,17 +120,8 @@ final class DuoHingeSource: NSObject {
     /// Note this deliberately does *not* observe `UIDevice.orientationDidChangeNotification`:
     /// UIKit only posts that while `beginGeneratingDeviceOrientationNotifications()` is
     /// active, so an observer for it would silently never fire.
-    private func observeGeometryChanges() {
-        let token = NotificationCenter.default.addObserver(
-            forName: UIApplication.didBecomeActiveNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.republishGeometry() }
-        }
-        notificationTokens = [token]
-
-        geometryObservation = Self.keyWindow()?.windowScene?.observe(
+    private func observeGeometry(of window: UIWindow) {
+        geometryObservation = window.windowScene?.observe(
             \.effectiveGeometry,
             options: [.new]
         ) { [weak self] _, _ in

@@ -78,15 +78,16 @@ internal fun HingeSnapshot.toFoldingState(): FoldingState {
  * the status, which does not carry one.
  *
  * Apple's guidance is to treat the reserved regions as the source of truth for layout, so the
- * region a half-opened device reports is what decides Book versus Tabletop. With no region to
- * read, a half-opened device falls back to [FoldPosture.Book]: the Duo's hinge is vertical in
- * portrait, and Book degrades to a single pane anyway once [SplitSpec.minPaneSize] is applied.
+ * region a half-opened device reports is what decides Book versus Tabletop. With no active
+ * region to read, the window's shape decides: the Duo's fold halves the longer side, so a
+ * tall window has a horizontal fold (Tabletop) and a wide one a vertical fold (Book).
  */
 private fun HingeSnapshot.derivePosture(regions: List<FoldRegion>): FoldPosture = when (status) {
     HingeStatus.CLOSED -> FoldPosture.Closed
     HingeStatus.FULLY_OPEN -> FoldPosture.Flat
     HingeStatus.PARTIALLY_OPEN -> {
         val axis = regions.firstOrNull { it.isSeparating && it.isActive }?.axis
+            ?: if (windowHeight > windowWidth) FoldAxis.Horizontal else FoldAxis.Vertical
         if (axis == FoldAxis.Horizontal) FoldPosture.Tabletop else FoldPosture.Book
     }
     else -> FoldPosture.Unknown
