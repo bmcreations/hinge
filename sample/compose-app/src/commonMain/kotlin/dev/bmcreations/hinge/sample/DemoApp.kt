@@ -9,6 +9,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -59,6 +64,7 @@ fun DemoApp() {
 @Composable
 private fun DemoRoot() {
     var simulation by remember { mutableStateOf(SimulatedPosture.Live) }
+    var screen by remember { mutableStateOf(DemoScreen.Notes) }
     var inspectorOpen by remember { mutableStateOf(true) }
     val live = rememberFoldingState()
 
@@ -80,6 +86,7 @@ private fun DemoRoot() {
     Box(Modifier.fillMaxSize()) {
 
         DemoSurface(
+            screen = screen,
             simulation = simulation,
             live = live,
             contentPadding = PaddingValues(top = barHeight, bottom = inspectorHeight),
@@ -87,6 +94,8 @@ private fun DemoRoot() {
         )
 
         SimulatorBar(
+            screen = screen,
+            onScreen = { screen = it },
             selected = simulation,
             onSelect = { simulation = it },
             inspectorOpen = inspectorOpen,
@@ -127,6 +136,7 @@ private fun DemoRoot() {
  */
 @Composable
 private fun DemoSurface(
+    screen: DemoScreen,
     simulation: SimulatedPosture,
     live: FoldingState,
     contentPadding: PaddingValues,
@@ -135,7 +145,13 @@ private fun DemoSurface(
     val override = simulation.surfaceOverride
     val shape = RoundedCornerShape(if (override == null) 0.dp else 20.dp)
 
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    // The cover surface is centred in the space the overlays leave, so the bar never covers it.
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(if (override == null) Modifier else Modifier.padding(contentPadding)),
+        contentAlignment = Alignment.Center,
+    ) {
         Surface(
             modifier = if (override == null) {
                 Modifier.fillMaxSize()
@@ -154,7 +170,11 @@ private fun DemoSurface(
                 val state = simulation.resolve(live, maxWidth.value, maxHeight.value)
                 LaunchedEffect(state) { onResolved(state) }
                 ProvideFoldingState(state) {
-                    NotesScreen(contentPadding = if (override == null) contentPadding else NoPadding)
+                    val padding = if (override == null) contentPadding else NoPadding
+                    when (screen) {
+                        DemoScreen.Notes -> NotesScreen(contentPadding = padding)
+                        DemoScreen.Player -> PlayerScreen(contentPadding = padding)
+                    }
                 }
             }
         }
@@ -163,8 +183,15 @@ private fun DemoSurface(
 
 private val NoPadding = PaddingValues(0.dp)
 
+private enum class DemoScreen(val label: String) {
+    Notes("Notes"),
+    Player("Player"),
+}
+
 @Composable
 private fun SimulatorBar(
+    screen: DemoScreen,
+    onScreen: (DemoScreen) -> Unit,
     selected: SimulatedPosture,
     onSelect: (SimulatedPosture) -> Unit,
     inspectorOpen: Boolean,
@@ -175,13 +202,30 @@ private fun SimulatorBar(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.94f),
     ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
+        // The bar overlays an edge-to-edge window, so it pads itself below the status bar.
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Posture", style = MaterialTheme.typography.labelLarge)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    DemoScreen.entries.forEach { entry ->
+                        FilterChip(
+                            selected = entry == screen,
+                            onClick = { onScreen(entry) },
+                            label = { Text(entry.label) },
+                        )
+                    }
+                }
                 TextButton(onClick = onToggleInspector) {
                     Text(if (inspectorOpen) "Hide inspector" else "Show inspector")
                 }

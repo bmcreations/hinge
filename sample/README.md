@@ -2,9 +2,14 @@
 
 `compose-app` is a Compose Multiplatform demo: one UI, running on Android and iOS. `android-app`
 is the Android entry point only (`MainActivity` and the manifest), because AGP 9 does not allow
-an application module to also apply the multiplatform plugin. It shows a
-list/detail screen laid out by `FoldAwarePanes`, a posture simulator, and an inspector that
-prints what the SDK reported and what geometry it resolved to.
+an application module to also apply the multiplatform plugin. It has two screens, a posture
+simulator, and an inspector that prints what the SDK reported and what geometry it resolved to:
+
+- **Notes**, a list/detail screen on `ListDetailPanes`. The open note keeps its state when the
+  layout switches between one and two panes.
+- **Player**, a media player that changes shape with the fold: video beside the queue in Book or
+  a wide window, video on the raised half and controls on the flat half in Tabletop, and video
+  and controls alone on a cover display. Each pane reads `LocalPaneLayout` for the axis.
 
 ## The posture simulator is the point
 
