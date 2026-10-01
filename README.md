@@ -138,7 +138,8 @@ reads it.
 reports it forever. Never gate rendering on it.
 
 **Android never reports `Closed`.** A closed device is either an ordinary small window on the
-cover display or a stopped activity; `androidx.window` has no signal to map. `minPaneSize`
+cover display (reported as `Unknown`, since it has no fold) or a stopped activity;
+`androidx.window` has no signal to map. `minPaneSize`
 is what makes cover displays behave, which is why it exists.
 
 **The hinge angle is off by default on Android.** `foldingStateFlow(activity)` does not

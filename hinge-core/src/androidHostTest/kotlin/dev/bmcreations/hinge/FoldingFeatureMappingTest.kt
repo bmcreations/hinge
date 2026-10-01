@@ -27,10 +27,10 @@ class FoldingFeatureMappingTest {
     private val window = FoldSize(800f, 600f)
 
     @Test
-    fun noFoldIsFlatWithNoRegions() {
+    fun noFoldIsUnknownWithNoRegions() {
         val state = foldingState(emptyList(), density = 2f, windowSize = window, angle = null)
 
-        assertEquals(FoldPosture.Flat, state.posture)
+        assertEquals(FoldPosture.Unknown, state.posture)
         assertTrue(state.regions.isEmpty())
     }
 
