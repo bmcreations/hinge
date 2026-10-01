@@ -109,7 +109,7 @@ fun PlayerScreen(contentPadding: PaddingValues) {
     MaterialTheme(colorScheme = PlayerColors) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             FoldAwarePanes(
-                modifier = Modifier.fillMaxSize().padding(rememberOcclusionPadding()),
+                modifier = Modifier.fillMaxSize().padding(rememberOcclusionPadding(reserved = contentPadding)),
                 primary = {
                     val layout = LocalPaneLayout.current
                     val padding = contentPadding.forPane(layout, leading = true)

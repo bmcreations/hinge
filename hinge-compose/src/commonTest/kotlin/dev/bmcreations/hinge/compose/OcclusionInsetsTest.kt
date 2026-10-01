@@ -52,4 +52,33 @@ class OcclusionInsetsTest {
             state(FoldRect(0f, 0f, 24f, 800f), active = false).occlusionInsets(),
         )
     }
+
+    @Test
+    fun aCornerRegionPadsOnlyItsCheaperEdge() {
+        // A housing in the top-left corner, 120 wide and 40 tall: padding the top costs 40,
+        // the left 120, so only the top moves.
+        assertEquals(
+            OcclusionInsets(left = 0f, top = 40f, right = 0f, bottom = 0f),
+            state(FoldRect(0f, 0f, 120f, 40f)).occlusionInsets(),
+        )
+    }
+
+    @Test
+    fun aCornerRegionAlreadyUnderAReservedBandPadsNothing() {
+        // A 130 tall top bar already keeps content below the 120 tall housing.
+        val reserved = OcclusionInsets(left = 0f, top = 130f, right = 0f, bottom = 0f)
+
+        assertEquals(
+            OcclusionInsets(0f, 0f, 0f, 0f),
+            state(FoldRect(360f, 0f, 400f, 120f)).occlusionInsets(reserved),
+        )
+    }
+
+    @Test
+    fun reservedSpaceIsSubtractedFromTheInset() {
+        // A 24 wide strip on the left with 10 already reserved needs 14 more.
+        val reserved = OcclusionInsets(left = 10f, top = 0f, right = 0f, bottom = 0f)
+
+        assertEquals(14f, state(FoldRect(0f, 0f, 24f, 800f)).occlusionInsets(reserved).left)
+    }
 }

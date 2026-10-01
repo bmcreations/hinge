@@ -53,7 +53,7 @@ fun NotesScreen(contentPadding: PaddingValues) {
         showDetail = selected != null,
         // Insets the panes away from any occluding region that reaches a window edge. With
         // the Occlusion posture selected, watch the whole layout shift clear of the strip.
-        modifier = Modifier.fillMaxSize().padding(rememberOcclusionPadding()),
+        modifier = Modifier.fillMaxSize().padding(rememberOcclusionPadding(reserved = contentPadding)),
         list = {
             val twoPane = LocalPaneLayout.current is PaneLayout.Split
             NoteList(
