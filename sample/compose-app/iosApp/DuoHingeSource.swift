@@ -42,9 +42,9 @@ final class DuoHingeSource: NSObject {
     private var interaction: UIInteraction?
     private var notificationTokens: [NSObjectProtocol] = []
     private var geometryObservation: NSKeyValueObservation?
-    /// The last `UIHinge` the interaction delivered, as `Any?` for the same reason as
-    /// `publish(hinge:)`. Geometry-only republishes reuse it so they never reset the posture.
-    private var lastHinge: Any?
+    /// The last `UIHinge` the interaction delivered. Geometry-only republishes reuse it so they
+    /// never reset the posture.
+    private var lastHinge: UIHinge?
 
     // MARK: - Lifecycle
 
@@ -74,7 +74,7 @@ final class DuoHingeSource: NSObject {
     // MARK: - Observation
 
     private func attachIfPossible() {
-        guard #available(iOS 27.1, *), let window = Self.keyWindow() else { return }
+        guard let window = Self.keyWindow() else { return }
         // The handler also fires with a nil `hinge` when the interaction leaves a hierarchy
         // that provides hinge updates; `publish` treats that as unknown.
         let hingeInteraction = UIHingeInteraction { [weak self] _, update in
@@ -121,26 +121,15 @@ final class DuoHingeSource: NSObject {
 
     // MARK: - Publishing
 
-    /// Builds and emits a snapshot. `hinge` is `Any?` so that the call sites above, which are
-    /// not inside an availability check, never have to name an iOS 27.1 type.
-    private func publish(hinge: Any?) {
+    /// Builds and emits a snapshot.
+    private func publish(hinge: UIHinge?) {
         guard let emit else { return }
         let window = Self.keyWindow()
         let size = window?.bounds.size ?? .zero
 
-        var status = SnapshotStatus.unknown
-        var angle = -1.0
-        var regions: [HingeSnapshotRegion] = []
-
-        if #available(iOS 27.1, *) {
-            if let hinge = hinge as? UIHinge {
-                status = Self.status(of: hinge)
-                angle = Double(hinge.angle)
-            }
-            if let window {
-                regions = Self.reservedRegions(in: window)
-            }
-        }
+        let status = hinge.map(Self.status(of:)) ?? .unknown
+        let angle = hinge.map { Double($0.angle) } ?? -1.0
+        let regions = window.map(Self.reservedRegions(in:)) ?? []
 
         emit(
             HingeSnapshot(
@@ -153,7 +142,6 @@ final class DuoHingeSource: NSObject {
         )
     }
 
-    @available(iOS 27.1, *)
     private static func status(of hinge: UIHinge) -> SnapshotStatus {
         switch hinge.status {
         case .closed: return .closed
@@ -166,7 +154,6 @@ final class DuoHingeSource: NSObject {
     /// Reads both region kinds and merges them, because a single physical region is routinely
     /// reported as both a division and an occlusion, and the shared model treats those as two
     /// independent properties of one region rather than as two regions.
-    @available(iOS 27.1, *)
     private static func reservedRegions(in view: UIView) -> [HingeSnapshotRegion] {
         var merged: [String: MutableRegion] = [:]
 
